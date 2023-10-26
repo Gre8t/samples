@@ -33,24 +33,26 @@ pipeline {
         }
 
         stage('Tests') {
-            parallel {
-                stage('NUnit Check') {
+            steps {
+                script{
+                     parallel(
+                "NUnit Check":{
                     agent any
                     steps {
                         echo 'NUnit on the running... '
                         sh "dotnet test csharp/unit-testing/NUnit.Library.Tests/NUnit.Library.Tests.csproj"
                         junit '**/TestResults/*.xml' 
                     }
-                }
-                stage('xUnit Exam') {
+                },
+                "xUnit Exam": {
                     agent any
                     steps {
                         echo 'Let xUnit examine... '
                         sh "dotnet test csharp/unit-testing/xUnit.Tests/xUnit.Tests.csproj"
                         junit '**/TestResults/*.xml' 
                     }
-                }
-                stage('MSTest Investigation') {
+                },
+                "MSTest Investigation": {
                     agent any
                     steps {
                         echo 'Running MSTest...'
@@ -63,8 +65,10 @@ pipeline {
                         junit '**/TestResults/*.trx'
                     }
                 }
+            )
             }
-        }           
+        } 
+        }          
 
         stage('Approval') {
             steps {
