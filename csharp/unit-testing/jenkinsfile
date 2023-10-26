@@ -1,0 +1,134 @@
+pipeline {
+    agent any
+
+    environment {
+        CONFIGURATION = 'Release'
+    }
+
+    parameters {
+        string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Branch to build.')
+        booleanParam(name: 'SHOULD_PUBLISH', defaultValue: false, description: 'Should the "publish" step run?')
+    }
+
+    stages {
+        stage('Checkout') {
+            agent any
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: "${BRANCH_NAME}"]], extensions: [], userRemoteConfigs: [[url: 'https://github.com/dotnet/samples.git']]])
+            }
+        }
+
+        stage('Build') {
+            agent {
+                label 'dotnet'
+            }
+            steps {
+                echo 'Building...'
+                sh 'dotnet build csharp/unit-testing/UnitTesting.sln --configuration ${BUILD_CONFIGURATION}'
+            }
+        }
+
+        stage('Tests') {
+            parallel {
+                stage('MSTest') {
+                    agent { label 'test' }
+                    steps {
+                        echo 'Running MSTest...'
+                        sh 'dotnet test csharp/unit-testing/MSTestProject'
+                    }
+                    post {
+                        always {
+                            junit '**/MSTestProject/TestResults/*.trx'
+                        }
+                    }
+                }
+                // ... (similar blocks for other test frameworks)
+            }
+        }
+
+        stage('Static Analysis') {
+            steps {
+                // SonarQube integration steps
+                sh 'dotnet sonarscanner begin /k:"project-key"'
+                sh 'dotnet build'
+                sh 'dotnet sonarscanner end'
+            }
+        }        
+
+        stage('Approval') {
+            steps {
+                script {
+                    // Send a Slack notification for approval
+                    //todo: for quick test we can bypass the process of waiting for a slack approval
+                    //from our golang app
+                    slackSend(
+                        channel: "#deployments",
+                        message: "Deployment of build #${currentBuild.number} is awaiting approval.",
+                        attachments: [ 
+                            [ 
+                                "fallback": "Deployment approval required",
+                                "color": "warning",
+                                "callback_id": "deploy_approval_${currentBuild.number}",
+                                "actions": [
+                                    [
+                                        "name": "approve",
+                                        "text": "Approve",
+                                        "type": "button",
+                                        "value": "approve"
+                                    ],
+                                    [
+                                        "name": "reject",
+                                        "text": "Reject",
+                                        "type": "button",
+                                        "value": "reject"
+                                    ]
+                                ]
+                            ]
+                        ]
+                    )
+                    
+                    // This waits for an external service (your Express server) to set this flag in Jenkins
+                    waitUntil {
+                        script {
+                            def approvalStatus = currentBuild.rawBuild.getEnvironment(listener).get('APPROVAL_STATUS')
+                            return (approvalStatus == 'APPROVED' || approvalStatus == 'REJECTED')
+                        }
+                    }
+
+                    script {
+                        def approvalStatus = currentBuild.rawBuild.getEnvironment(listener).get('APPROVAL_STATUS')
+                        if(approvalStatus == 'REJECTED') {
+                            error('Deployment was rejected!')
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Publish') {
+            when {
+                expression { return params.SHOULD_PUBLISH }
+            }
+            steps {
+                echo 'Publishing...'
+                // todo: add a publish version strategy
+                sh 'dotnet publish csharp/unit-testing/UnitTesting.sln --configuration ${BUILD_CONFIGURATION} -o ./publish'
+                archiveArtifacts artifacts: '**/publish/*', allowEmptyArchive: true
+            }
+        }
+
+    }
+
+    post {
+            always {
+            echo 'Cleanup...'
+            cleanWs()
+            }
+            failure {
+                slackSend(
+                color: 'danger',
+                message: "@${currentBuild.CAUSE_USER_ID} - Build Failure for #${currentBuild.number}. Check Jenkins logs."
+             )
+            }
+        }    
+}
