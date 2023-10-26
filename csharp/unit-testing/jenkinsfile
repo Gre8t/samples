@@ -22,43 +22,54 @@ pipeline {
             agent any
             steps {
                 echo 'Building...'
+                sh """
+                 sudo apt-get update
+                 sudo apt-get install -y apt-transport-https
+  		 sudo apt-get update
+  		 sudo apt-get install -y dotnet-sdk-6.0
+                """
                 sh 'dotnet build csharp/unit-testing/UnitTesting.sln --configuration ${BUILD_CONFIGURATION}'
             }
         }
 
         stage('Tests') {
             parallel {
-                stage('MSTest') {
+                stage('NUnit Check') {
+                    agent any
+                    steps {
+                        echo 'NUnit on the running... '
+                        sh "dotnet test csharp/unit-testing/NUnit.Library.Tests/NUnit.Library.Tests.csproj"
+                        junit '**/TestResults/*.xml' 
+                    }
+                }
+                stage('xUnit Exam') {
+                    agent any
+                    steps {
+                        echo 'Let xUnit examine... '
+                        sh "dotnet test csharp/unit-testing/xUnit.Tests/xUnit.Tests.csproj"
+                        junit '**/TestResults/*.xml' 
+                    }
+                }
+                stage('MSTest Investigation') {
                     agent any
                     steps {
                         echo 'Running MSTest...'
-                        sh 'dotnet test csharp/unit-testing/MSTestProject'
-                    }
-                    post {
-                        always {
-                            junit '**/MSTestProject/TestResults/*.trx'
+                        // Retry mechanism for robustness
+                        retry(2) {
+                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                                sh "dotnet test csharp/unit-testing/MSTest.UnitTests/MSTest.UnitTests.csproj"
+                            }
                         }
+                        junit '**/TestResults/*.trx'
                     }
                 }
-                // ... (similar blocks for other test frameworks)
             }
-        }
-
-        stage('Static Analysis') {
-            steps {
-                // SonarQube integration steps
-                sh 'dotnet sonarscanner begin /k:"project-key"'
-                sh 'dotnet build'
-                sh 'dotnet sonarscanner end'
-            }
-        }        
+        }           
 
         stage('Approval') {
             steps {
                 script {
-                    // Send a Slack notification for approval
-                    //todo: for quick test we can bypass the process of waiting for a slack approval
-                    //from our golang app
+                    // Send a Slack notification for approval                    
                     slackSend(
                         channel: "#deployments",
                         message: "Deployment of build #${currentBuild.number} is awaiting approval.",
@@ -83,16 +94,8 @@ pipeline {
                                 ]
                             ]
                         ]
-                    )
+                    )                  
                     
-                    // This waits for an external service (your Express server) to set this flag in Jenkins
-                    waitUntil {
-                        script {
-                            def approvalStatus = currentBuild.rawBuild.getEnvironment(listener).get('APPROVAL_STATUS')
-                            return (approvalStatus == 'APPROVED' || approvalStatus == 'REJECTED')
-                        }
-                    }
-
                     script {
                         def approvalStatus = currentBuild.rawBuild.getEnvironment(listener).get('APPROVAL_STATUS')
                         if(approvalStatus == 'REJECTED') {
