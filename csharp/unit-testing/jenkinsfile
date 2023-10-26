@@ -125,11 +125,20 @@ pipeline {
             echo 'Cleanup...'
             cleanWs()
             }
-            failure {
-                slackSend(
-                color: 'danger',
-                message: "@${currentBuild.CAUSE_USER_ID} - Build Failure for #${currentBuild.number}. Check Jenkins logs."
-             )
-            }
+             failure {
+        // Try to get the user who triggered the build.
+        def user
+        try {
+            user = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
+        } catch (Exception e) {
+            echo "Error retrieving user ID: ${e.getMessage()}"
+            user = "User" // Default value if user ID cannot be retrieved
+        }
+
+        slackSend(
+            color: 'danger',
+            message: "@${user} - Build Failure for #${currentBuild.number}. Check Jenkins logs."
+        )
+    }
         }    
 }
