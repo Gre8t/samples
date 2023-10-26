@@ -19,9 +19,7 @@ pipeline {
         }
 
         stage('Build') {
-            agent {
-                label 'dotnet'
-            }
+            agent any
             steps {
                 echo 'Building...'
                 sh 'dotnet build csharp/unit-testing/UnitTesting.sln --configuration ${BUILD_CONFIGURATION}'
@@ -31,7 +29,7 @@ pipeline {
         stage('Tests') {
             parallel {
                 stage('MSTest') {
-                    agent { label 'test' }
+                    agent any
                     steps {
                         echo 'Running MSTest...'
                         sh 'dotnet test csharp/unit-testing/MSTestProject'
