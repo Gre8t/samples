@@ -113,10 +113,19 @@ pipeline {
                 expression { return params.SHOULD_PUBLISH }
             }
             steps {
+                script {
+                    // Using GitVersion to calculate version based on Git history
+                    def gitVersionResult = sh(script: 'GitVersion /output json', returnStdout: true).trim()
+                    def gitVersionData = readJSON text: gitVersionResult
+                    
+                    // Set version environment variable for later stages
+                    env.SEMVER_VERSION = gitVersionData.SemVer
+                }
                 echo 'Publishing...'
                 // todo: add a publish version strategy
                 sh 'dotnet publish csharp/unit-testing/UnitTesting.sln --configuration ${BUILD_CONFIGURATION} -o ./publish'
-                archiveArtifacts artifacts: '**/publish/*', allowEmptyArchive: true
+                sh 'zip -r publish-${SEMVER_VERSION}.zip ./publish'
+                archiveArtifacts artifacts: 'publish-${SEMVER_VERSION}.zip', allowEmptyArchive: true
             }
         }
 
