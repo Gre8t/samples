@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        CONFIGURATION = 'Release'
+        BUILD_CONFIGURATION = 'Release'
     }
 
     parameters {
