@@ -68,45 +68,7 @@ pipeline {
         // } 
         // }          
 
-        // stage('Approval') {
-        //     steps {
-        //         script {
-        //             // Send a Slack notification for approval                    
-        //             slackSend(
-        //                 channel: "#deployments",
-        //                 message: "Deployment of build #${currentBuild.number} is awaiting approval.",
-        //                 attachments: [ 
-        //                     [ 
-        //                         "fallback": "Deployment approval required",
-        //                         "color": "warning",
-        //                         "callback_id": "deploy_approval_${currentBuild.number}",
-        //                         "actions": [
-        //                             [
-        //                                 "name": "approve",
-        //                                 "text": "Approve",
-        //                                 "type": "button",
-        //                                 "value": "approve"
-        //                             ],
-        //                             [
-        //                                 "name": "reject",
-        //                                 "text": "Reject",
-        //                                 "type": "button",
-        //                                 "value": "reject"
-        //                             ]
-        //                         ]
-        //                     ]
-        //                 ]
-        //             )                  
-                    
-        //             script {
-        //                 def approvalStatus = currentBuild.rawBuild.getEnvironment(listener).get('APPROVAL_STATUS')
-        //                 if(approvalStatus == 'REJECTED') {
-        //                     error('Deployment was rejected!')
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        
 
         stage('Publish') {
             when {
@@ -137,6 +99,7 @@ pipeline {
 
             slackSend(
                 color: 'danger',
+                channel: "#deployments",
                 message: "Build Failure for #${currentBuild.number}. Check Jenkins logs."
             )
         }
