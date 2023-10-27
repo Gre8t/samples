@@ -76,6 +76,21 @@ pipeline {
             }
             steps {
                 script {
+                    //install gitversion
+                    if (isUnix()) {
+                        // Check if it's macOS
+                        if (sh(script: 'uname -s | grep Darwin', returnStatus: true) == 0) {
+                            sh 'brew install gitversion'
+                        } else {  // Assuming it's Linux
+                            sh '''
+                            wget https://github.com/GitTools/GitVersion/releases/download/{YOUR_GITVERSION_VERSION}/GitVersion-bin-net5.0.tar.gz
+                            tar xzf GitVersion-bin-net5.0.tar.gz -C /usr/local/bin
+                            '''
+                        }
+                    } else {  // Windows
+                        bat 'choco install gitversion.portable -y'
+                    }
+                    }
                     // Using GitVersion to calculate version based on Git history
                     def gitVersionResult = sh(script: 'GitVersion /output json', returnStdout: true).trim()
                     def gitVersionData = readJSON text: gitVersionResult
