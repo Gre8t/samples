@@ -22,10 +22,27 @@ pipeline {
             agent any
             steps {
                 echo 'Building...'
-                sh '''
-                 sudo apt-get update
-                 sudo apt-get install -y apt-transport-https dotnet-sdk-7.0
-                '''
+                script {
+                    // Detect the operating system
+                    if (isUnix()) {
+                        if (sh(script: 'uname -s | grep Darwin', returnStatus: true) == 0) {
+                            // macOS commands to install .NET
+                            sh '''
+                    brew update
+                    brew install --cask dotnet-sdk
+                    '''
+                } else {
+                            // Linux (Ubuntu) commands to install .NET
+                            sh '''
+                    sudo apt-get update
+                    sudo apt-get install -y apt-transport-https dotnet-sdk-7.0
+                    '''
+                        }
+            } else {
+                        // Windows commands to install .NET
+                        bat 'choco install dotnetcore-sdk -y'
+                    }
+                }
                 sh 'dotnet build csharp/unit-testing/UnitTesting.sln --configuration ${BUILD_CONFIGURATION}'
             }
         }
