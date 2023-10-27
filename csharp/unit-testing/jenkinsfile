@@ -35,34 +35,28 @@ pipeline {
                 script {
                     parallel(
                 'NUnit Check': {
-                    steps {
-                        echo 'NUnit running... '
-                            //publish failed test
-                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    echo 'NUnit running...'
+                    //publish failed test
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                         sh 'dotnet test csharp/unit-testing/NUnit.Library.Tests/NUnit.Library.Tests.csproj'
-                            }
-                        junit '**/TestResults/*.xml'
                     }
+                    junit '**/TestResults/*.xml'
                 },
                 'xUnit check': {
-                    steps {
-                        echo 'Let xUnit check... '
-                        //publish failed test
-                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    echo 'Let xUnit check...'
+                    //publish failed test
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                         sh 'dotnet test csharp/unit-testing/xUnit.Tests/xUnit.Tests.csproj'
-                        }
-                        junit '**/TestResults/*.xml'
                     }
+                    junit '**/TestResults/*.xml'
                 },
                 'MSTest check': {
-                    steps {
-                        echo 'Running MSTest...'
-                            //publish failed test
-                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                                sh 'dotnet test csharp/unit-testing/MSTest.UnitTests/MSTest.UnitTests.csproj'
-                            }
-                        junit '**/TestResults/*.trx'
+                    echo 'Running MSTest...'
+                    //publish failed test
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        sh 'dotnet test csharp/unit-testing/MSTest.UnitTests/MSTest.UnitTests.csproj'
                     }
+                    junit '**/TestResults/*.trx'
                 }
             )
                 }
