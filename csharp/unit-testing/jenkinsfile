@@ -83,7 +83,7 @@ pipeline {
                             sh 'brew install gitversion'
                         } else {  // Assuming it's Linux
                             sh '''
-                            wget https://github.com/GitTools/GitVersion/releases/download/{YOUR_GITVERSION_VERSION}/GitVersion-bin-net5.0.tar.gz
+                            wget https://github.com/GitTools/GitVersion/releases/download/5.12.0/gitversion-linux-x64-5.12.0.tar.gz
                             tar xzf GitVersion-bin-net5.0.tar.gz -C /usr/local/bin
                             '''
                         }
