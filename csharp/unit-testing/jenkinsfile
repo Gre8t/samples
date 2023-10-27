@@ -35,7 +35,6 @@ pipeline {
                 script {
                     parallel(
                 'NUnit Check': {
-                    agent any
                     steps {
                         echo 'NUnit running... '
                             //publish failed test
@@ -46,7 +45,6 @@ pipeline {
                     }
                 },
                 'xUnit check': {
-                    agent any
                     steps {
                         echo 'Let xUnit check... '
                         //publish failed test
@@ -57,7 +55,6 @@ pipeline {
                     }
                 },
                 'MSTest check': {
-                    agent any
                     steps {
                         echo 'Running MSTest...'
                             //publish failed test
@@ -111,12 +108,12 @@ pipeline {
             echo 'Cleanup...'
             cleanWs()
             }
-        // failure {
-        //     slackSend(
-        //         color: 'danger',
-        //         channel: '#deployments',
-        //         message: "Build Failure for #${currentBuild.number}. Check Jenkins logs."
-        //     )
-        // }
+        failure {
+            slackSend(
+                color: 'danger',
+                channel: '#deployments',
+                message: "Build Failure for #${currentBuild.number}. Check Jenkins logs."
+            )
+        }
     }
 }
