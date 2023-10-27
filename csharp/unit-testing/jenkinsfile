@@ -97,8 +97,8 @@ pipeline {
                     env.SEMVER_VERSION = gitVersionData.SemVer
                 }
                 echo 'Publishing...'
-                sh 'dotnet publish csharp/unit-testing/UnitTesting.sln --configuration ${BUILD_CONFIGURATION} -o ${SEMVER_VERSION}'
-                sh 'zip -r ${SEMVER_VERSION}.zip ./publish'
+                sh 'dotnet publish csharp/unit-testing/UnitTesting.sln --configuration ${BUILD_CONFIGURATION} -o build-${SEMVER_VERSION}'
+                sh 'zip -r build-${SEMVER_VERSION}.zip build-${SEMVER_VERSION}'
                 archiveArtifacts artifacts: '${SEMVER_VERSION}.zip', allowEmptyArchive: true
             }
         }
