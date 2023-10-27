@@ -30,43 +30,47 @@ pipeline {
             }
         }
 
-        // stage('Tests') {
-        //     steps {
-        //         script{
-        //              parallel(
-        //         "NUnit Check":{
-        //             agent any
-        //             steps {
-        //                 echo 'NUnit on the running... '
-        //                 sh "dotnet test csharp/unit-testing/NUnit.Library.Tests/NUnit.Library.Tests.csproj"
-        //                 junit '**/TestResults/*.xml' 
-        //             }
-        //         },
-        //         "xUnit Exam": {
-        //             agent any
-        //             steps {
-        //                 echo 'Let xUnit examine... '
-        //                 sh "dotnet test csharp/unit-testing/xUnit.Tests/xUnit.Tests.csproj"
-        //                 junit '**/TestResults/*.xml' 
-        //             }
-        //         },
-        //         "MSTest Investigation": {
-        //             agent any
-        //             steps {
-        //                 echo 'Running MSTest...'
-        //                 // Retry mechanism for robustness
-        //                 retry(2) {
-        //                     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-        //                         sh "dotnet test csharp/unit-testing/MSTest.UnitTests/MSTest.UnitTests.csproj"
-        //                     }
-        //                 }
-        //                 junit '**/TestResults/*.trx'
-        //             }
-        //         }
-        //     )
-        //     }
-        // } 
-        // }          
+        stage('Tests') {
+            steps {
+                script{
+                     parallel(
+                "NUnit Check":{
+                    agent any
+                    steps {
+                        echo 'NUnit on the running... '
+                        //publish failed test
+                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        sh "dotnet test csharp/unit-testing/NUnit.Library.Tests/NUnit.Library.Tests.csproj"
+                            }
+                        junit '**/TestResults/*.xml' 
+                    }
+                },
+                "xUnit check": {
+                    agent any
+                    steps {
+                        echo 'Let xUnit examine... '
+                        //publish failed test
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        sh "dotnet test csharp/unit-testing/xUnit.Tests/xUnit.Tests.csproj"
+                        }
+                        junit '**/TestResults/*.xml' 
+                    }
+                },
+                "MSTest check": {
+                    agent any
+                    steps {
+                        echo 'Running MSTest...'
+                        //publish failed test
+                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                                sh "dotnet test csharp/unit-testing/MSTest.UnitTests/MSTest.UnitTests.csproj"
+                        }
+                        junit '**/TestResults/*.trx'
+                    }
+                }
+            )
+            }
+        } 
+        }          
 
         
 
@@ -99,7 +103,7 @@ pipeline {
                 echo 'Publishing...'
                 sh 'dotnet publish csharp/unit-testing/UnitTesting.sln --configuration ${BUILD_CONFIGURATION} -o build-${SEMVER_VERSION}'
                 sh 'zip -r build-${SEMVER_VERSION}.zip build-${SEMVER_VERSION}'
-                archiveArtifacts artifacts: '${SEMVER_VERSION}.zip', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'build-${SEMVER_VERSION}.zip', allowEmptyArchive: true
             }
         }
 
