@@ -14,7 +14,7 @@ pipeline {
         stage('Checkout') {
             agent any
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: "${BRANCH_NAME}"]], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Gre8t/samples']]])
+                checkout([$class: 'GitSCM', branches: [[name: "${BRANCH_NAME}"]], extensions: [], userRemoteConfigs: [[url: 'https://github.com/dotnet/samples']]])
             }
         }
 
@@ -22,57 +22,55 @@ pipeline {
             agent any
             steps {
                 echo 'Building...'
-                sh """
+                sh '''
                  sudo apt-get update
                  sudo apt-get install -y apt-transport-https dotnet-sdk-7.0
-                """
+                '''
                 sh 'dotnet build csharp/unit-testing/UnitTesting.sln --configuration ${BUILD_CONFIGURATION}'
             }
         }
 
         stage('Tests') {
             steps {
-                script{
-                     parallel(
-                "NUnit Check":{
+                script {
+                    parallel(
+                'NUnit Check': {
                     agent any
                     steps {
-                        echo 'NUnit on the running... '
-                        //publish failed test
+                        echo 'NUnit running... '
+                            //publish failed test
                             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        sh "dotnet test csharp/unit-testing/NUnit.Library.Tests/NUnit.Library.Tests.csproj"
+                        sh 'dotnet test csharp/unit-testing/NUnit.Library.Tests/NUnit.Library.Tests.csproj'
                             }
-                        junit '**/TestResults/*.xml' 
+                        junit '**/TestResults/*.xml'
                     }
                 },
-                "xUnit check": {
+                'xUnit check': {
                     agent any
                     steps {
-                        echo 'Let xUnit examine... '
+                        echo 'Let xUnit check... '
                         //publish failed test
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        sh "dotnet test csharp/unit-testing/xUnit.Tests/xUnit.Tests.csproj"
+                        sh 'dotnet test csharp/unit-testing/xUnit.Tests/xUnit.Tests.csproj'
                         }
-                        junit '**/TestResults/*.xml' 
+                        junit '**/TestResults/*.xml'
                     }
                 },
-                "MSTest check": {
+                'MSTest check': {
                     agent any
                     steps {
                         echo 'Running MSTest...'
-                        //publish failed test
+                            //publish failed test
                             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                                sh "dotnet test csharp/unit-testing/MSTest.UnitTests/MSTest.UnitTests.csproj"
-                        }
+                                sh 'dotnet test csharp/unit-testing/MSTest.UnitTests/MSTest.UnitTests.csproj'
+                            }
                         junit '**/TestResults/*.trx'
                     }
                 }
             )
+                }
             }
-        } 
-        }          
-
-        
+        }
 
         stage('Publish') {
             when {
@@ -94,7 +92,7 @@ pipeline {
                     } else {  // Windows
                         bat 'choco install gitversion.portable -y'
                     }
-                    
+
                     // Using GitVersion to calculate version based on Git history
                     def gitVersionResult = sh(script: 'gitversion /output json', returnStdout: true).trim()
                     def gitVersionData = readJSON text: gitVersionResult
@@ -106,7 +104,6 @@ pipeline {
                 archiveArtifacts artifacts: 'build-${SEMVER_VERSION}.zip', allowEmptyArchive: true
             }
         }
-
     }
 
     post {
@@ -114,15 +111,12 @@ pipeline {
             echo 'Cleanup...'
             cleanWs()
             }
-             failure {      
-
+        failure {
             slackSend(
                 color: 'danger',
-                channel: "#deployments",
+                channel: '#deployments',
                 message: "Build Failure for #${currentBuild.number}. Check Jenkins logs."
             )
         }
     }
-    
-
 }
