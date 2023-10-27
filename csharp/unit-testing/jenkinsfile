@@ -111,12 +111,12 @@ pipeline {
             echo 'Cleanup...'
             cleanWs()
             }
-        failure {
-            slackSend(
-                color: 'danger',
-                channel: '#deployments',
-                message: "Build Failure for #${currentBuild.number}. Check Jenkins logs."
-            )
-        }
+        // failure {
+        //     slackSend(
+        //         color: 'danger',
+        //         channel: '#deployments',
+        //         message: "Build Failure for #${currentBuild.number}. Check Jenkins logs."
+        //     )
+        // }
     }
 }
