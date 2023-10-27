@@ -92,7 +92,7 @@ pipeline {
                     }
                     
                     // Using GitVersion to calculate version based on Git history
-                    def gitVersionResult = sh(script: 'GitVersion /output json', returnStdout: true).trim()
+                    def gitVersionResult = sh(script: 'gitversion /output json', returnStdout: true).trim()
                     def gitVersionData = readJSON text: gitVersionResult
                     env.SEMVER_VERSION = gitVersionData.SemVer
                 }
