@@ -90,7 +90,7 @@ pipeline {
                     } else {  // Windows
                         bat 'choco install gitversion.portable -y'
                     }
-                    }
+                    
                     // Using GitVersion to calculate version based on Git history
                     def gitVersionResult = sh(script: 'GitVersion /output json', returnStdout: true).trim()
                     def gitVersionData = readJSON text: gitVersionResult
